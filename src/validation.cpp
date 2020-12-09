@@ -4005,7 +4005,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
     if (!AcceptBlockHeader(block, state, chainparams, &pindex))
         return false;
-    CheckBlockIndex(chainparams.GetConsensus());
+    //CheckBlockIndex(chainparams.GetConsensus());
 
 
     // Try to process all requested blocks that we don't have, but only
