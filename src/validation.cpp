@@ -1493,6 +1493,8 @@ void CChainState::InvalidBlockFound(CBlockIndex *pindex, const CValidationState 
         g_failed_blocks.insert(pindex);
         setDirtyBlockIndex.insert(pindex);
         setBlockIndexCandidates.erase(pindex);
+        std::cerr << __func__ << " setBlockIndexCandidates.erase " << pindex->GetBlockHash().GetHex() << std::endl;
+
         InvalidChainFound(pindex);
     }
 }
@@ -2893,9 +2895,13 @@ CBlockIndex* CChainState::FindMostWorkChain() {
                         mapBlocksUnlinked.insert(std::make_pair(pindexFailed->pprev, pindexFailed));
                     }
                     setBlockIndexCandidates.erase(pindexFailed);
+                            std::cerr << __func__ << " setBlockIndexCandidates.erase pindexFailed " << pindexFailed->GetBlockHash().GetHex() << std::endl;
+
                     pindexFailed = pindexFailed->pprev;
                 }
                 setBlockIndexCandidates.erase(pindexTest);
+                std::cerr << __func__ << " setBlockIndexCandidates.erase pindexTest=" << pindexTest->GetBlockHash().GetHex() << std::endl;
+
                 fInvalidAncestor = true;
                 break;
             }
@@ -2912,6 +2918,7 @@ void CChainState::PruneBlockIndexCandidates() {
     // reorganization to a better block fails.
     std::set<CBlockIndex*, CBlockIndexWorkComparator>::iterator it = setBlockIndexCandidates.begin();
     while (it != setBlockIndexCandidates.end() && setBlockIndexCandidates.value_comp()(*it, chainActive.Tip())) {
+        std::cerr << __func__ << " setBlockIndexCandidates.erase " << it->GetBlockHash().GetHex() << std::endl;
         setBlockIndexCandidates.erase(it++);
     }
     // Either the current tip or a successor of it we're working towards is left in setBlockIndexCandidates.
@@ -3145,6 +3152,8 @@ bool CChainState::PreciousBlock(CValidationState& state, const CChainParams& par
         }
         nLastPreciousChainwork = chainActive.Tip()->nChainWork;
         setBlockIndexCandidates.erase(pindex);
+        std::cerr << __func__ << " setBlockIndexCandidates.erase " << pindex->GetBlockHash().GetHex() << std::endl;
+
         pindex->nSequenceId = nBlockReverseSequenceId;
         if (nBlockReverseSequenceId > std::numeric_limits<int32_t>::min()) {
             // We can't keep reducing the counter if somebody really wants to
@@ -3153,6 +3162,7 @@ bool CChainState::PreciousBlock(CValidationState& state, const CChainParams& par
         }
         if (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) && pindex->nChainTx) {
             setBlockIndexCandidates.insert(pindex);
+            std::cerr << __func__ << " setBlockIndexCandidates.insert " << pindex->GetBlockHash().GetHex() << std::endl;
             PruneBlockIndexCandidates();
         }
     }
@@ -3195,6 +3205,8 @@ bool CChainState::InvalidateBlock(CValidationState& state, const CChainParams& c
         invalid_walk_tip->nStatus |= BLOCK_FAILED_CHILD;
         setDirtyBlockIndex.insert(invalid_walk_tip);
         setBlockIndexCandidates.erase(invalid_walk_tip);
+        std::cerr << __func__ << " setBlockIndexCandidates.erase invalid_walk_tip=" << invalid_walk_tip->GetBlockHash().GetHex() << std::endl;
+
         invalid_walk_tip = invalid_walk_tip->pprev;
     }
 
@@ -3202,6 +3214,8 @@ bool CChainState::InvalidateBlock(CValidationState& state, const CChainParams& c
     pindex->nStatus |= BLOCK_FAILED_VALID;
     setDirtyBlockIndex.insert(pindex);
     setBlockIndexCandidates.erase(pindex);
+        std::cerr << __func__ << " setBlockIndexCandidates.erase pindex" << pindex->GetBlockHash().GetHex() << std::endl;
+
     g_failed_blocks.insert(pindex);
 
     // DisconnectTip will add transactions to disconnectpool; try to add these
@@ -3214,6 +3228,7 @@ bool CChainState::InvalidateBlock(CValidationState& state, const CChainParams& c
     while (it != mapBlockIndex.end()) {
         if (it->second->IsValid(BLOCK_VALID_TRANSACTIONS) && it->second->nChainTx && !setBlockIndexCandidates.value_comp()(it->second, chainActive.Tip())) {
             setBlockIndexCandidates.insert(it->second);
+            std::cerr << __func__ << " setBlockIndexCandidates.insert " << it->second->GetBlockHash().GetHex() << std::endl;
         }
         it++;
     }
@@ -3239,6 +3254,7 @@ bool CChainState::ResetBlockFailureFlags(CBlockIndex *pindex) {
             setDirtyBlockIndex.insert(it->second);
             if (it->second->IsValid(BLOCK_VALID_TRANSACTIONS) && it->second->nChainTx && setBlockIndexCandidates.value_comp()(chainActive.Tip(), it->second)) {
                 setBlockIndexCandidates.insert(it->second);
+                std::cerr << __func__ << " setBlockIndexCandidates.insert " << it->second->GetBlockHash().GetHex() << std::endl;
             }
             if (it->second == pindexBestInvalid) {
                 // Reset invalid block marker if it was pointing to one of those.
@@ -3329,6 +3345,7 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
             }
             if (chainActive.Tip() == nullptr || !setBlockIndexCandidates.value_comp()(pindex, chainActive.Tip())) {
                 setBlockIndexCandidates.insert(pindex);
+                std::cerr << __func__ << " setBlockIndexCandidates.insert " << pindex->GetBlockHash().GetHex() << std::endl;
             }
             std::pair<std::multimap<CBlockIndex*, CBlockIndex*>::iterator, std::multimap<CBlockIndex*, CBlockIndex*>::iterator> range = mapBlocksUnlinked.equal_range(pindex);
             while (range.first != range.second) {
@@ -4371,8 +4388,10 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
             pindex->nStatus |= BLOCK_FAILED_CHILD;
             setDirtyBlockIndex.insert(pindex);
         }
-        if (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) && (pindex->nChainTx || pindex->pprev == nullptr))
+        if (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) && (pindex->nChainTx || pindex->pprev == nullptr)) {
             setBlockIndexCandidates.insert(pindex);
+            std::cerr << __func__ << " setBlockIndexCandidates.insert " << pindex->GetBlockHash().GetHex() << std::endl;
+        }
         if (pindex->nStatus & BLOCK_FAILED_MASK && (!pindexBestInvalid || pindex->nChainWork > pindexBestInvalid->nChainWork))
             pindexBestInvalid = pindex;
         if (pindex->pprev)
@@ -4738,6 +4757,8 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             setDirtyBlockIndex.insert(pindexIter);
             // Update indexes
             setBlockIndexCandidates.erase(pindexIter);
+            std::cerr << __func__ << " setBlockIndexCandidates.erase " << pindexIter->GetBlockHash().GetHex() << std::endl;
+
             std::pair<std::multimap<CBlockIndex*, CBlockIndex*>::iterator, std::multimap<CBlockIndex*, CBlockIndex*>::iterator> ret = mapBlocksUnlinked.equal_range(pindexIter->pprev);
             while (ret.first != ret.second) {
                 if (ret.first->second == pindexIter) {
@@ -4748,6 +4769,8 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
             }
         } else if (pindexIter->IsValid(BLOCK_VALID_TRANSACTIONS) && pindexIter->nChainTx) {
             setBlockIndexCandidates.insert(pindexIter);
+            std::cerr << __func__ << " setBlockIndexCandidates.insert " << pindexIter->GetBlockHash().GetHex() << std::endl;
+
         }
     }
 
@@ -5043,6 +5066,7 @@ void CChainState::CheckBlockIndex(const Consensus::Params& consensusParams)
     CBlockIndex* pindexFirstNotChainValid = nullptr; // Oldest ancestor of pindex which does not have BLOCK_VALID_CHAIN (regardless of being valid or not).
     CBlockIndex* pindexFirstNotScriptsValid = nullptr; // Oldest ancestor of pindex which does not have BLOCK_VALID_SCRIPTS (regardless of being valid or not).
     while (pindex != nullptr) {
+        std::cerr << __func__ << " pindex=" << pindex->GetBlockHash().GetHex() << " setBlockIndexCandidates.count(pindex)=" << setBlockIndexCandidates.count(pindex) << std::endl;
         nNodes++;
         if (pindexFirstInvalid == nullptr && pindex->nStatus & BLOCK_FAILED_VALID) pindexFirstInvalid = pindex;
         if (pindexFirstMissing == nullptr && !(pindex->nStatus & BLOCK_HAVE_DATA)) pindexFirstMissing = pindex;
