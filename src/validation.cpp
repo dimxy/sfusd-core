@@ -3947,7 +3947,7 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
     if (ppindex)
         *ppindex = pindex;
 
-    CheckBlockIndex(chainparams.GetConsensus());
+    //CheckBlockIndex(chainparams.GetConsensus());
 
     return true;
 }
@@ -4005,6 +4005,8 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
     if (!AcceptBlockHeader(block, state, chainparams, &pindex))
         return false;
+    CheckBlockIndex(chainparams.GetConsensus());
+
 
     // Try to process all requested blocks that we don't have, but only
     // process an unrequested block if it's new and has enough work to
