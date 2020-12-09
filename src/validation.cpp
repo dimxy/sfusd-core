@@ -2918,7 +2918,7 @@ void CChainState::PruneBlockIndexCandidates() {
     // reorganization to a better block fails.
     std::set<CBlockIndex*, CBlockIndexWorkComparator>::iterator it = setBlockIndexCandidates.begin();
     while (it != setBlockIndexCandidates.end() && setBlockIndexCandidates.value_comp()(*it, chainActive.Tip())) {
-        std::cerr << __func__ << " setBlockIndexCandidates.erase " << it->GetBlockHash().GetHex() << std::endl;
+        std::cerr << __func__ << " setBlockIndexCandidates.erase " << (*it)->GetBlockHash().GetHex() << std::endl;
         setBlockIndexCandidates.erase(it++);
     }
     // Either the current tip or a successor of it we're working towards is left in setBlockIndexCandidates.
