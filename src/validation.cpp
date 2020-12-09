@@ -4010,7 +4010,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         return false;
     //CheckBlockIndex(chainparams.GetConsensus());
 
-
+    std::cerr << __func__ << " for block=" << pindex->GetBlockHash().GetHex() << std::endl;
     // Try to process all requested blocks that we don't have, but only
     // process an unrequested block if it's new and has enough work to
     // advance our tip, and isn't too many blocks ahead.
@@ -4030,7 +4030,10 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
     // TODO: deal better with return value and error conditions for duplicate
     // and unrequested blocks.
-    if (fAlreadyHave) return true;
+    if (fAlreadyHave) {
+        std::cerr << __func__ << " alreadyHave" << std::endl;
+        return true;
+    }
     if (!fRequested) {  // If we didn't ask for it:
         if (pindex->nTx != 0) return true;    // This is a previously-processed block that was pruned
         if (!fHasMoreOrSameWork) return true; // Don't process less-work chains
@@ -4050,6 +4053,8 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
             pindex->nStatus |= BLOCK_FAILED_VALID;
             setDirtyBlockIndex.insert(pindex);
         }
+        std::cerr << __func__ << " CheckBlock false" << std::endl;
+
         return error("%s: %s", __func__, FormatStateMessage(state));
     }
 
@@ -4063,11 +4068,19 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         CDiskBlockPos blockPos = SaveBlockToDisk(block, pindex->nHeight, chainparams, dbp);
         if (blockPos.IsNull()) {
             state.Error(strprintf("%s: Failed to find position to write new block to disk", __func__));
+            std::cerr << __func__ << " failed to write" << std::endl;
+
             return false;
         }
-        if (!ReceivedBlockTransactions(block, state, pindex, blockPos, chainparams.GetConsensus()))
+        if (!ReceivedBlockTransactions(block, state, pindex, blockPos, chainparams.GetConsensus()))  {
+            std::cerr << __func__ << " ReceivedBlockTransactions false" << std::endl;
             return error("AcceptBlock(): ReceivedBlockTransactions failed");
+        }
+        std::cerr << __func__ << " ReceivedBlockTransactions true" << std::endl;
+
     } catch (const std::runtime_error& e) {
+                    std::cerr << __func__ << " system error" << std::endl;
+
         return AbortNode(state, std::string("System error: ") + e.what());
     }
 
