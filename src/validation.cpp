@@ -4734,6 +4734,7 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
     // to disk before writing the chainstate, resulting in a failure to continue if interrupted.
     for (const auto& entry : mapBlockIndex) {
         CBlockIndex* pindexIter = entry.second;
+        std::cerr << __func__ << " checking for blockindex " << pindexIter->GetBlockHash().GetHex()
 
         // Note: If we encounter an insufficiently validated block that
         // is on chainActive, it must be because we are a pruning node, and
