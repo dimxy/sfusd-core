@@ -3337,12 +3337,15 @@ bool CChainState::ReceivedBlockTransactions(const CBlock &block, CValidationStat
         // Recursively process any descendant blocks that now may be eligible to be connected.
         while (!queue.empty()) {
             CBlockIndex *pindex = queue.front();
+            std::cerr << __func__ << " checking queue " << pindex->GetBlockHash().GetHex() << std::endl;
             queue.pop_front();
             pindex->nChainTx = (pindex->pprev ? pindex->pprev->nChainTx : 0) + pindex->nTx;
             {
                 LOCK(cs_nBlockSequenceId);
                 pindex->nSequenceId = nBlockSequenceId++;
             }
+
+            std::cerr << __func__ << " setBlockIndexCandidates.value_comp()(pindex, chainActive.Tip())=" << setBlockIndexCandidates.value_comp()(pindex, chainActive.Tip()) << std::endl;
             if (chainActive.Tip() == nullptr || !setBlockIndexCandidates.value_comp()(pindex, chainActive.Tip())) {
                 setBlockIndexCandidates.insert(pindex);
                 std::cerr << __func__ << " setBlockIndexCandidates.insert " << pindex->GetBlockHash().GetHex() << std::endl;
